@@ -12,6 +12,17 @@ class State:
         self.board = board
         self.map = ''.join(str(e) for e in board)
         self.depth = depth
+        self.cost = self.calculateCost()
+
+    def calculateCost(self):
+        pos = 1
+        count = 0
+        for tile in self.board:
+            if tile == pos:
+                count += 1
+            pos += 1
+        return self.depth + 8 - count
+
 
 
 class Puzzle:
@@ -22,7 +33,7 @@ class Puzzle:
         self.timeOfSolving = 0
         self.timeOfGenerateSuccessors = 0
         self.maxDeepSearch = 0
-        self.inititalState = State(None, self.createInitialBoard(), None, 0)
+        self.inititalState = State(None, self.createInitialBoard(), 'Start', 0)
         # self.inititalState = State(None, [1, 2, 3, 4, 5, 6, 7, 0, 8], None, 0)
         self.goalBoard = self.createGoalBoard()
         self.finalState = None
@@ -98,7 +109,7 @@ class Puzzle:
         # slide zero to left
         if rowIndexOfZero != 0:
             newState = currentState.board.copy()
-            newState[indexOfZero] = newState[indexOfZero - 1]
+            newState[indexOfZero] = newState[indexOfZero - 1]   
             newState[indexOfZero - 1] = 0
             lstSuccessors.append(
                 State(currentState, newState, 'left', currentState.depth + 1))
@@ -109,8 +120,14 @@ class Puzzle:
             newState[indexOfZero + 1] = 0
             lstSuccessors.append(
                 State(currentState, newState, 'right', currentState.depth + 1))
+        
+        lstSuccessorsCost = [ele.cost for ele in lstSuccessors]
+        lstSuccessorsInOrderOfCost = []
+        for i in range(0, len(lstSuccessorsCost)):
+            lstSuccessorsInOrderOfCost.append(lstSuccessors[lstSuccessorsCost.index(min(lstSuccessorsCost))])
+            lstSuccessorsCost[lstSuccessorsCost.index(min(lstSuccessorsCost))] = 100
 
-        return lstSuccessors
+        return lstSuccessorsInOrderOfCost
 
     def solvePuzzle(self, currentState):
         self.stack.append(currentState)
@@ -121,6 +138,7 @@ class Puzzle:
                 # find path
                 # self.printBoard(currentState.board)
                 self.finalState = currentState
+                print("Solving " + str(self.n) + " puzzle done!")
                 return
             start_time_gen = time.time()
             lstSuccessor = self.generateSuccessors(currentState)
@@ -139,9 +157,8 @@ class Puzzle:
         self.solvePuzzle(self.inititalState)
         end_time = time.time()
         self.timeOfSolving = end_time - start_time
-        print("Solving " + str(self.n) + " puzzle done!")
         print("Running time: " + str(self.timeOfSolving))
-        print("Max Search Dept: " + str(self.finalState.depth))
+        print("Max Search Dept: " + str(self.maxDeepSearch))
         print("Final State Dept: " + str(self.finalState.depth))
 
     def printInitialBoard(self):
@@ -169,7 +186,7 @@ def main(argv):
     eight_puzzle.printInitialBoard()
     print()
     eight_puzzle.solve()
-    eight_puzzle.printPath()
+    # eight_puzzle.printPath()
 
 if __name__ == "__main__":
     main(sys.argv[1:])
