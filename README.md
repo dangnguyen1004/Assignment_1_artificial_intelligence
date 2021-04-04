@@ -1,5 +1,5 @@
 # Assignment_1_artificial_intelligence
-Assignment 1 - First Step to Artificial Intelligence Subject - HCMUT
+Assignment 1 - First Step to Artificial Intelligence Subject - HCMUT - Semester 202
 # Goals:
 * Emplement simple search algorithms
 * Solve simple puzzle games
