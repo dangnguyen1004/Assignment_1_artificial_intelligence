@@ -34,7 +34,7 @@ class Puzzle:
         self.timeOfGenerateSuccessors = 0
         self.maxDeepSearch = 0
         self.inititalState = State(None, self.createInitialBoard(), 'Start', 0)
-        # self.inititalState = State(None, [1, 2, 3, 4, 5, 6, 7, 0, 8], None, 0)
+        # self.inititalState = State(None, [1, 2, 3, 4, 5, 6, 7, 8,9,10,11,12,13,0,14,15], None, 0)
         self.goalBoard = self.createGoalBoard()
         self.finalState = None
         self.stateStorage = set()  # Store states that have visited
@@ -186,7 +186,7 @@ def main(argv):
     eight_puzzle.printInitialBoard()
     print()
     eight_puzzle.solve()
-    # eight_puzzle.printPath()
+    eight_puzzle.printPath()
 
 if __name__ == "__main__":
     main(sys.argv[1:])
