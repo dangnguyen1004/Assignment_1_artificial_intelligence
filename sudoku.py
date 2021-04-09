@@ -1,6 +1,8 @@
 import sys
 import random
-# import numpy as np
+import numpy
+import functools
+import time
 
 sizeOfSudoku = 9
 
@@ -39,19 +41,47 @@ class Chromosome:
                 for row in range(blockRow * 3, blockRow * 3 + 3):
                     for col in range(blockCol * 3, blockCol * 3 + 3):
                         blockCount[self.values[row][col] - 1] += 1
-                blockFitness = (1.0 / len(set(blockCount))) / sizeOfSudoku
+                blockFitness += (1.0 / len(set(blockCount))) / sizeOfSudoku
                 blockCount = [0 for i in range(sizeOfSudoku)]
 
         # total fitness score
         if int(rowFitness) == 1 and int(columnFitness) == 1 and int(blockFitness) == 1:
-            self.fitnessScore = 1
+            self.fitnessScore = 1   
         else:
-            self.fitnessScore =  columnFitness * blockFitness
-        print(self.fitnessScore)
+            self.fitnessScore = columnFitness * blockFitness
+        # print(self.fitnessScore)
 
+    def mutate(self, mutateRate, givenSudoku):
+        r = random.uniform(0, 1.1)
+        while r > 1:
+            r = random.uniform(0, 1.1)
 
-    def mutate(self, mutateRate):
-        pass
+        success = False
+        if r < mutateRate:
+            while not(success):
+                row = random.randint(0, sizeOfSudoku - 1)
+
+                column1 = random.randint(0, sizeOfSudoku - 1)
+                column2 = random.randint(0, sizeOfSudoku - 1)
+                while column1 == column2:
+                    column1 = random.randint(0, sizeOfSudoku - 1)
+                    column2 = random.randint(0, sizeOfSudoku - 1)
+
+                # check gene not in legal value
+                if givenSudoku.values[row][column1] == 0 and givenSudoku.values[row][column2] == 0:
+                    # check possible exchange gene
+                    if (not givenSudoku.isColumnDuplicate(column1, self.values[row][column2]) 
+                        and not givenSudoku.isColumnDuplicate(column2, self.values[row][column1]) 
+                        and not givenSudoku.isBlockDuplicate(row, column1, self.values[row][column2]) 
+                        and not givenSudoku.isBlockDuplicate(row, column2, self.values[row][column1])):
+                        
+                        # exchange gene
+                        temp = self.values[row][column1]
+                        self.values[row][column1] = self.values[row][column2]
+                        self.values[row][column2] = temp
+                        
+                        success = True
+        return success
 
 
 class Given(Chromosome):
@@ -135,15 +165,10 @@ class Population:
             chromosome.updateFitnessScore()
 
     def sortChromosome(self):
-        self.chromosomes.sort(self.sortFitness)
-    
-    def sortFitness(self, x, y):
-        if y.fitnessScore > x.fitnessScore:
-            return 1
-        elif x.fitnessScore == y.fitnessScore:
-            return 0
-        else:
-            return -1
+        self.chromosomes.sort(key = self.sortFitness, reverse = True)
+
+    def sortFitness(self, x):
+        return x.fitnessScore
 
 
 class GeneticFunction:
@@ -166,10 +191,11 @@ class GeneticFunction:
             weaker = c1
 
         selectionRate = 0.85
-        r = random.uniform(0, 1.1)
-        while(r > 1):  
-            r = random.uniform(0, 1.1)
-        if(r < selectionRate):
+        rate = random.uniform(0, 1.1)
+        while(rate > 1):
+            rate = random.uniform(0, 1.1)
+            
+        if(rate < selectionRate):
             return stronger
         else:
             return weaker
@@ -183,23 +209,26 @@ class GeneticFunction:
         child2.values = mother.values.copy()
 
         # crossover
-        r = random.uniform(0, 1.1)
-        while(r > 1): 
-            r = random.uniform(0, 1.1)
+        rate = random.uniform(0, 1.1)
+        while(rate > 1):
+            rate = random.uniform(0, 1.1)
 
-        if r < crossoverRate:
+        if rate < crossoverRate:
             # find two point to exchange genes
-            point1 = random.randint(0,8)
-            point2 = random.randint(1,9)
+            point1 = random.randint(0, 8)
+            point2 = random.randint(1, 9)
             while point1 >= point2:
-                point1 = random.randint(0,8)
-                point2 = random.randint(1,9)
-            
+                point1 = random.randint(0, 8)
+                point2 = random.randint(1, 9)
+
             for gene in range(point1, point2):
-                child1.values[gene], child2.values[gene] = self.crossoverRow(child1.values[gene], child2.values[gene])
-
-
-        
+                # exchange gene
+                temp = child1.values[gene].copy()
+                child1.values[gene] = child2.values[gene].copy()
+                child2.values[gene] = temp.copy()
+        child1.updateFitnessScore()
+        child2.updateFitnessScore()
+        return child1, child2
 
     def crossover_row(self, row1, row2,):
         pass
@@ -209,32 +238,41 @@ class Sudoku:
     def __init__(self):
         self.given = None
         self.population = None
+        self.solution = None
 
         # Sudoku variable
         self.numberOfChromosomes = 1000
         self.numberOfElites = int(0.05 * self.numberOfChromosomes)
-        self.numberOfGenerations = 1000 
+        self.numberOfGenerations = 1000
         self.numberOfMutation = 0
 
     def solve(self):
+        # mutate variable
+        phi = 0
+        sigma = 1
+        mutationRate = 0.06
+
         # Create initial population
         self.population = Population()
         self.population.seed(self.numberOfChromosomes, self.given)
 
         # Loop in 1000 generations to find solution
+        stale = 0
         for generation in range(self.numberOfGenerations):
-            print("Generation " + generation)
+            print("Generation "+ str(generation))
 
             # check for solution
             bestFitnessScore = 0.0
             for chr in self.population.chromosomes:
                 fitnessScore = chr.fitnessScore
                 if (int(fitnessScore) == 1):
-                    print("Solution found at generation " + generation)
+                    print("Solution found at generation " + str(generation))
+                    self.solution = chr
+                    self.printSolution(self.solution)
                     return
                 if (fitnessScore > bestFitnessScore):
                     bestFitnessScore = fitnessScore
-            print("Best fitness score: " + bestFitnessScore)
+            print("Best fitness score: " + str(bestFitnessScore))
 
             # select elites (the fittest chromosomes)
             self.population.sortChromosome()
@@ -243,23 +281,79 @@ class Sudoku:
                 elite = Chromosome()
                 elite.values = self.population.chromosomes[e].values.copy()
                 elites.append(elite)
-            
-            # create the rest of chromosome
+
+            # create new population
+            newPopulation = []
             helper = GeneticFunction()
             for rest in range(self.numberOfElites, self.numberOfChromosomes, 2):
                 # Select father and mother from population
                 father = helper.select(self.population.chromosomes)
                 mother = helper.select(self.population.chromosomes)
 
-                # cross over father and mother
-                child1, child2 = helper.crossover(father, mother, crossoverRate = 1.0)
+                # cross over father and mother to give new offspring
+                child1, child2 = helper.crossover(
+                    father, mother, crossoverRate=1.0)
 
+                # mutate childrends
 
-                        
+                oldFitnessScore = child1.fitnessScore
+                if child1.mutate(mutationRate, self.given):
+                    self.numberOfMutation += 1
+                    if child1.fitnessScore > oldFitnessScore:
+                        phi += 1
 
-                    
+                oldFitnessScore = child2.fitnessScore
+                if child2.mutate(mutationRate, self.given):
+                    self.numberOfMutation += 1
+                    if child2.fitnessScore > oldFitnessScore:
+                        phi += 1
 
+                # add new child
+                newPopulation.append(child1)
+                newPopulation.append(child2)
 
+            # append the elites to the end of population
+            for e in elites:
+                newPopulation.append(e)
+
+            # next generatation
+            self.population.chromosomes = newPopulation
+            self.population.updateFitnessScore()
+
+            # Calculate new adaptive mutation rate
+            if self.numberOfMutation == 0:
+                phi = 0  
+            else:
+                phi = phi / self.numberOfMutation
+
+            if phi > 0.2:
+                sigma = sigma / 0.998
+            elif phi < 0.2:
+                sigma = sigma * 0.998
+
+            mutationRate = abs(numpy.random.normal(
+                loc=0.0, scale=sigma, size=None))
+            self.numberOfMutation = 0
+            phi = 0
+
+            # check stale population 
+            self.population.sortChromosome()
+            if(self.population.chromosomes[0].fitnessScore != self.population.chromosomes[1].fitnessScore):
+                stale = 0
+            else:
+                stale += 1
+
+            # re-seed population when stale
+            if stale >= 100:
+                print("The population has gone stale. Re-seeding...")
+                self.population.seed(sizeOfSudoku, self.given)
+                stale = 0
+                phi = 0
+                sigma = 1
+                self.numberOfMutation = 0
+                mutationRate = 0.06
+
+        print("Can't find solution")
 
     def readInput(self, fileName):
         input = open(fileName, "r")
@@ -271,16 +365,23 @@ class Sudoku:
                 self.given.values[row][col] = int(
                     givenValues[row * sizeOfSudoku + col])
 
+        print("Initial sudoku: ")
         for row in self.given.values:
+            print(row)
+
+    def printSolution(self, solution):
+        for row in solution.values:
             print(row)
 
 
 def main(argv):
     sudoku = Sudoku()
-    sudoku.readInput("sudoku.txt")
+    sudoku.readInput("superhard_sudoku.txt")
+    start_time = time.time()
     sudoku.solve()
-    print(
-    )
+    end_time = time.time()
+    timeOfSolving = end_time - start_time
+    print("Running time: " + str(timeOfSolving))
 
 
 if __name__ == "__main__":
