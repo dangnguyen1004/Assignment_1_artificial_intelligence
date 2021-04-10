@@ -320,7 +320,8 @@ class Sudoku:
             self.population.chromosomes = newPopulation
             self.population.updateFitnessScore()
 
-            # Calculate new adaptive mutation rate
+            # calculate new adaptive mutation rate for the next generation:
+            # base on 
             if self.numberOfMutation == 0:
                 phi = 0  
             else:
@@ -375,8 +376,9 @@ class Sudoku:
 
 
 def main(argv):
+    inputSudoku = input("Enter input file: ")
     sudoku = Sudoku()
-    sudoku.readInput("superhard_sudoku.txt")
+    sudoku.readInput(inputSudoku)
     start_time = time.time()
     sudoku.solve()
     end_time = time.time()
