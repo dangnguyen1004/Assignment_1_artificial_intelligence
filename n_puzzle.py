@@ -26,15 +26,15 @@ class State:
 
 
 class Puzzle:
-    def __init__(self, k):
+    def __init__(self, k, customBoard = None):
         self.k = k
         self.n = k*k - 1
         self.sizeOfBoard = k*k
         self.timeOfSolving = 0
         self.timeOfGenerateSuccessors = 0
         self.maxDeepSearch = 0
-        self.inititalState = State(None, self.createInitialBoard(), 'Start', 0)
-        # self.inititalState = State(None, [1, 2, 3, 4, 5, 6, 7, 8,9,10,11,12,13,0,14,15], None, 0)
+        self.inititalState = State(None, self.createInitialBoard(customBoard), 'Start', 0)
+        # self.inititalState = State(None, [12, 15, 4, 14, 2, 11, 3, 8, 10, 9, 0, 13, 6, 7, 1, 5], None, 0)
         self.goalBoard = self.createGoalBoard()
         self.finalState = None
         self.stateStorage = set()  # Store states that have visited
@@ -57,21 +57,27 @@ class Puzzle:
             return True
         return False
 
-    def createInitialBoard(self):
+    def createInitialBoard(self, customBoard):
         print("Creating initial state")
-        board = []
-        lstAddSuccess = []
-        while 1:
-            board.clear()
-            lstAddSuccess.clear()
-            for count in range(0, self.k*self.k):
-                newTile = random.randint(0, self.n)
-                while newTile in lstAddSuccess:
+        if customBoard is None:
+            board = []
+            lstAddSuccess = []
+            while 1:
+                board.clear()
+                lstAddSuccess.clear()
+                for count in range(0, self.k*self.k):
                     newTile = random.randint(0, self.n)
-                lstAddSuccess += [newTile]
-                board += [newTile]
-            if self.isSolvable(board):
-                break
+                    while newTile in lstAddSuccess:
+                        newTile = random.randint(0, self.n)
+                    lstAddSuccess += [newTile]
+                    board += [newTile]
+                if self.isSolvable(board):
+                    break
+        else:
+            board = [int(e) for e in customBoard]
+            if not self.isSolvable(board):
+                print("Cant find solution with this puzzle! Exiting...")
+                exit(-1)
         return board
 
     def createGoalBoard(self):
@@ -137,7 +143,7 @@ class Puzzle:
             if currentState.board == self.goalBoard:
                 # find path
                 # self.printBoard(currentState.board)
-                self.finalState = currentState
+                self.finalState = currentState  
                 print("Solving " + str(self.n) + " puzzle done!")
                 return
             start_time_gen = time.time()
@@ -151,6 +157,8 @@ class Puzzle:
                     self.stateStorage.add(successor.map)
                     if successor.depth > self.maxDeepSearch:
                         self.maxDeepSearch += 1
+        print("Cant solve puzzle! Exiting...")
+        exit(-1)
 
     def solve(self):
         start_time = time.time()
@@ -165,6 +173,9 @@ class Puzzle:
         self.printBoard(self.inititalState.board)
     
     def printPath(self):
+        if self.finalState is None:
+            print("No solution found!")
+            return
         path = []
         state = self.finalState
         while (state is not None):
@@ -182,11 +193,25 @@ def main(argv):
     #     print("Input must be k of integer, which is k*k matrix of puzzle")
     #     exit()
     # eight_puzzle = Puzzle(int(argv[0]))
-    eight_puzzle = Puzzle(4)
-    eight_puzzle.printInitialBoard()
-    print()
-    eight_puzzle.solve()
-    eight_puzzle.printPath()
+    k = int(input("Enter size of k * k puzzle, k = "))
+    while k not in range(2, 100):
+        print("k must be in range 2 - 100")
+        k = int(input("Enter size of k * k puzzle, k = "))
+    print("""
+        Choose:
+            1. Randome puzzle
+            2. Custome puzzle
+    """)
+    file = input()
+    if int(file) == 1:
+        puzzle = Puzzle(k)
+    elif int(file) == 2:
+        board = input("Enter puzzle: ")
+        puzzle = Puzzle(k ,list(board.split(" ")))
+    puzzle.printInitialBoard()
+    puzzle.solve()
+    puzzle.printPath()
+
 
 if __name__ == "__main__":
     main(sys.argv[1:])
