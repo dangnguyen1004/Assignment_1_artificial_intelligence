@@ -176,6 +176,7 @@ class GeneticFunction:
         return
 
     def select(self, chromosomes):
+        # randomly select 2 chromosome in population
         c1 = chromosomes[random.randint(0, len(chromosomes) - 1)]
         c2 = chromosomes[random.randint(0, len(chromosomes) - 1)]
         f1 = c1.fitnessScore
@@ -190,6 +191,7 @@ class GeneticFunction:
             stronger = c2
             weaker = c1
 
+        # natural selection 
         selectionRate = 0.85
         rate = random.uniform(0, 1.1)
         while(rate > 1):
@@ -214,7 +216,7 @@ class GeneticFunction:
             rate = random.uniform(0, 1.1)
 
         if rate < crossoverRate:
-            # find two point to exchange genes
+            # find two point to exchange genes from point1 to point2
             point1 = random.randint(0, 8)
             point2 = random.randint(1, 9)
             while point1 >= point2:
@@ -226,12 +228,10 @@ class GeneticFunction:
                 temp = child1.values[gene].copy()
                 child1.values[gene] = child2.values[gene].copy()
                 child2.values[gene] = temp.copy()
+        
         child1.updateFitnessScore()
         child2.updateFitnessScore()
         return child1, child2
-
-    def crossover_row(self, row1, row2,):
-        pass
 
 
 class Sudoku:
@@ -321,7 +321,7 @@ class Sudoku:
             self.population.updateFitnessScore()
 
             # calculate new adaptive mutation rate for the next generation:
-            # base on 
+            # based on Rechenberg's 1/5 success rule
             if self.numberOfMutation == 0:
                 phi = 0  
             else:
@@ -332,8 +332,7 @@ class Sudoku:
             elif phi < 0.2:
                 sigma = sigma * 0.998
 
-            mutationRate = abs(numpy.random.normal(
-                loc=0.0, scale=sigma, size=None))
+            mutationRate = abs(numpy.random.normal(loc=0.0, scale=sigma, size=None))
             self.numberOfMutation = 0
             phi = 0
 
