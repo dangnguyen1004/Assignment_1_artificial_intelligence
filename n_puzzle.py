@@ -2,6 +2,7 @@ import sys
 import getopt
 import random
 import time
+import os
 # sys.setrecursionlimit(100000)
 
 
@@ -130,8 +131,8 @@ class Puzzle:
         lstSuccessorsCost = [ele.cost for ele in lstSuccessors]
         lstSuccessorsInOrderOfCost = []
         for i in range(0, len(lstSuccessorsCost)):
-            lstSuccessorsInOrderOfCost.append(lstSuccessors[lstSuccessorsCost.index(min(lstSuccessorsCost))])
-            lstSuccessorsCost[lstSuccessorsCost.index(min(lstSuccessorsCost))] = 100
+            lstSuccessorsInOrderOfCost.append(lstSuccessors[lstSuccessorsCost.index(max(lstSuccessorsCost))])
+            lstSuccessorsCost[lstSuccessorsCost.index(max(lstSuccessorsCost))] = -1
 
         return lstSuccessorsInOrderOfCost
 
@@ -151,7 +152,7 @@ class Puzzle:
             end_time_gen = time.time()
             timeOfGen = end_time_gen - start_time_gen
             self.timeOfGenerateSuccessors += timeOfGen
-            for successor in lstSuccessor[::-1]:
+            for successor in lstSuccessor:
                 if successor.map not in self.stateStorage:
                     self.stack.append(successor)
                     self.stateStorage.add(successor.map)
@@ -186,7 +187,23 @@ class Puzzle:
         print("path: "),
         print(path[::-1])
 
-
+    def savePathToFile(self):
+        if self.finalState is None:
+            print("No solution found!")
+            return
+        path = []
+        state = self.finalState
+        while (state is not None):
+            if state.previousMove is not None:
+                path.append(state.previousMove)
+            state = state.parent
+        os.remove("path_sudoku.txt")
+        f = open("path_sudoku.txt", "a")
+        for p in path[::-1]:
+            f.write(p)
+            f.write(" ->")
+        f.write(" End\n")
+        f.close()
 
 def main(argv):
     # if (len(argv) != 1 or int(argv[0]) not in range(1, 10000)):
@@ -210,7 +227,12 @@ def main(argv):
         puzzle = Puzzle(k ,list(board.split(" ")))
     puzzle.printInitialBoard()
     puzzle.solve()
-    puzzle.printPath()
+    if (k == 3):
+        puzzle.printPath()
+        puzzle.savePathToFile()
+    else:
+        puzzle.savePathToFile()
+        print("Path save as path_sudoku.txt")
 
 
 if __name__ == "__main__":
